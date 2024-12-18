@@ -91,6 +91,133 @@ In our paper, we demonstrate that Equation \ref{eq:tri} can be reduced to a bi-l
 where $$r$$ is the known reward and $$c$$ is the learned constraint.
 
 
+### Results
+
+The following graphs compare 4 models trained differently. Partial IRL is our model, where we start by using RL with a base reward function and learn the residual of the reward function with IRL. Full IRL is a model trained from scratch using IRL. RL velocity is a model trained with RL using a reward function based on velocity. The last model, RL human is a model trained with RL with a human designed reward function.
+
+<div style="display: flex; justify-content: space-around; align-items: center; gap: 20px;">
+
+  <div style="text-align: center;">
+    <img src="../../../assets/img/deviation_heading.png?raw=true" alt="Image 1" title="Image 1 Title" style="width: 220px; height: auto;">
+    <p><strong style="font-size: 14px;">Figure 1: Deviation Heading &darr;</strong></p>
+  </div>
+
+  <div style="text-align: center;">
+    <img src="../../../assets/img/distance_traveled.png?raw=true" alt="Image 2" title="Image 2 Title" style="width: 220px; height: auto;">
+    <p><strong style="font-size: 14px;">Figure 2: Distance Traveled &uarr;</strong></p>
+  </div>
+
+  <div style="text-align: center;">
+    <img src="../../../assets/img/time_in_lane.png?raw=true" alt="Image 3" title="Image 3 Title" style="width: 220px; height: auto;">
+    <p><strong style="font-size: 14px;">Figure 3: % Time in Lane &uarr;</strong></p>
+  </div>
+
+</div>
+
+Figure 1 measures how much the vehicle deviates from the intended heading direction (lower values are better). The results show that the model RL Velocity performs the best with the smallest deviation and the model Partial IRL is close second. Full IRL and RL Human show significant deviation, indicating weaker performance.
+
+Figure 2 represents how far the model travels (higher values are better, implying better control). Partial IRL achieves the greatest distance traveled, followed closely by RL Velocity. Full IRL and RL Human perform poorly, with minimal distance covered, indicating less effective control.
+
+Figure 3 shows the percentage of time the model stays within the lane (higher values are better). RL Human performs the best, staying in the lane the most. Partial IRL also achieves high performance, slightly below RL Human. Full IRL and RL Velocity perform worse, spending less time in the lane.
+
+Overall, the Partial IRL is the most balanced model, performing well across all metrics. The RL Velocity model has good performance as well in these metrics.
+
+Next, we show simulation experiments of all 4 models in the same environment.
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center;">
+
+  <div>
+    <video controls style="width: 100%; height: auto;">
+      <source src="../../../assets/video/partial_irl_sim_trim.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p><strong style="font-size: 14px;">Partial IRL</strong></p>
+  </div>
+
+  <div>
+    <video controls style="width: 100%; height: auto;">
+      <source src="../../../assets/video/full_irl_sim.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p><strong style="font-size: 14px;">Full IRL</strong></p>
+  </div>
+
+  <div>
+    <video controls style="width: 100%; height: auto;">
+      <source src="../../../assets/video/rl_velocity_sim_trim.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p><strong style="font-size: 14px;">RL Velocity</strong></p>
+  </div>
+
+  <div>
+    <video controls style="width: 100%; height: auto;">
+      <source src="../../../assets/video/rl_human_sim_trim.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p><strong style="font-size: 14px;">RL Human</strong></p>
+  </div>
+
+</div>
+
+As expected, the videos of the Full IRL and the RL Human model perform poorly, which is coherent with the metrics evaluated in the Figures above. If we compare the videos from Partial IRL and RL Velocity, we can see that both perform well, but Partial IRL stays in the right lane whereas RL Velocity changes lanes at the beginning of the simulation. This behavior can be explained by the fact that Partial IRL captures more complex behavior from the expert trajectories it is trained on to learn the residual of the reward function, justifying its usefulness.
+
+In the following videos, we show more examples of Partial IRL in simulation.
+
+<div style="display: flex; justify-content: space-around; align-items: center; gap: 20px;">
+
+  <div style="text-align: center;">
+    <img src="../../../assets/video/partial_irl_sim_1.gif" alt="GIF 1" style="width: 200px; height: auto;">
+    <p><strong style="font-size: 14px;">GIF 1 Title</strong></p>
+  </div>
+
+  <div style="text-align: center;">
+    <img src="../../../assets/video/partial_irl_sim_2.gif" alt="GIF 2" style="width: 200px; height: auto;">
+    <p><strong style="font-size: 14px;">GIF 2 Title</strong></p>
+  </div>
+
+  <div style="text-align: center;">
+    <img src="../../../assets/video/partial_irl_sim_3.gif" alt="GIF 3" style="width: 200px; height: auto;">
+    <p><strong style="font-size: 14px;">GIF 3 Title</strong></p>
+  </div>
+
+</div>
+
+From all 3 videos, we see good performance of the model in the different lanes.
+
+Next, we show the model running on the real duckiebot in a similar environment as in simulation.
+
+<div style="display: flex; justify-content: space-around; align-items: center; gap: 20px;">
+
+  <div style="text-align: center;">
+    <video controls style="width: 100%; max-width: 400px; height: auto;">
+      <source src="../../../assets/video/partial_irl_real_1.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p><strong style="font-size: 14px;">Video 1 Title</strong></p>
+  </div>
+
+  <div style="text-align: center;">
+    <video controls style="width: 100%; max-width: 400px; height: auto;">
+      <source src="../../../assets/video/partial_irl_real_2.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p><strong style="font-size: 14px;">Video 2 Title</strong></p>
+  </div>
+
+</div>
+
+
+From the performance in the videos, we can see that the sim2real transfer is pretty smooth. The only adjustment made on the real robot was changing the velocity of the robot. 
+
+### Conclusion
+
+In this work, we addressed the lane-following problem in autonomous driving using a simplified inverse reinforcement learning (IRL) approach combined with reinforcement learning (RL). By learning the residual component of the reward function using expert trajectories, Partial IRL demonstrated a clear advantage over traditional RL and full IRL models.
+
+Our results showed that Partial IRL achieves a balance across key metrics—deviation heading, distance traveled, and time spent in lane—outperforming RL models that rely on predefined or simplistic reward functions. The model not only generalizes well in simulations but also transfers smoothly to a real Duckiebot, with only minor velocity adjustments.
+
+Notably, Partial IRL captures more complex behaviors, such as lane adherence, which plain RL methods struggle to learn. This highlights the usefulness of incorporating expert knowledge to refine reward functions, offering a practical and computationally efficient solution to challenges in autonomous driving.
+
 
 
 
