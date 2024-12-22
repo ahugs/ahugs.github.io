@@ -43,13 +43,13 @@ bibliography: 2024-12-22-lane_following.bib
 
 Reinforcement learning often struggles with complex tasks like autonomous driving, in part due to the difficulty of designing reward functions which properly balance objectives and constraints. A common solution is imitation learning, where the agent is trained in a supervised manner to simply mimic expert behavior. However, imitation learning can be brittle and is prone to compounding errors. A potentially more robust solution lies in IRL, which combines offline expert trajectories with real-world rollouts to learn a reward function. Traditional IRL methods, however, are challenging to train due to their reliance on bi-level adversarial objectives. Does an intermediate solution exist?
 
- ```mermaid 
- %%{init: { 'theme':'dark', 'securityLevel': 'loose'} }%%
-flowchart LR
-i("
-<img src='assets/img/prof_pic.jpg' style='max-width:1000px;min-height:0'/>
-") -..-> Minimize
- ```
+<div style="display: flex; justify-content: space-around; align-items: center; gap: 20px;">
+
+  <div style="text-align: center;">
+    <img src="../../../assets/img/diagram.jpg?raw=true" alt="Diagram" title="Diagram" style="width: 700px; height: auto;">
+    <p><strong style="font-size: 14px;">Architecture Diagram</strong></p>
+  </div>
+</div>
 
 
 In fact, in many real-world scenarios, there may exist some simple to define primary goal. For example, in autonomous driving, we can define this goal as driving speed or time-to-destination. This goal alone, however, does not explain the expert behavior, which must additionally obey the rules or "constraints" of the road. In this setting, we can consider the potentially easier inverse task of inferring _constraints_ under a _known_ reward function. Precisely, this is the domain of inverse constrained reinforcement learning (ICRL).  In their seminal paper on inverse constraint learning, Malik et al <d-cite key="malik2021inverse"></d-cite>, propose an algorithm for inferring constraints from expert data which involves solving a constrained MDP in the inner loop of a maximum-entropy IRL algorithm. This introduces a tri-level optimization, however, which may in fact be more complex to solve than the original IRL problem. In our NeurIPS 2024 paper <d-cite key="hugessen2024simplifying"></d-cite>, we propose a simple reduction of the ICRL problem to an IRL problem, which is equivalent under a broad class of constraint functions, and propose some simple-to-implement practical modifications for the constraint inference case. We show that this can perform as well or better than ICRL methods that explicitly solve a constrained MDP on simulated MuJoCo environments <d-cite key="liu2022benchmarking"></d-cite>. But does it work in the real world?
