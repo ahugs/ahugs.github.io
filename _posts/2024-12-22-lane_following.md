@@ -54,7 +54,7 @@ Reinforcement learning often struggles with complex tasks like autonomous drivin
 
 In fact, in many real-world scenarios, there may exist some simple to define primary goal. For example, in autonomous driving, we can define this goal as driving speed or time-to-destination. This goal alone, however, does not explain the expert behavior, which must additionally obey the rules or "constraints" of the road. In this setting, we can consider the potentially easier inverse task of inferring _constraints_ under a _known_ reward function. Precisely, this is the domain of inverse constrained reinforcement learning (ICRL).  In their seminal paper on inverse constraint learning, Malik et al <d-cite key="malik2021inverse"></d-cite>, propose an algorithm for inferring constraints from expert data which involves solving a constrained MDP in the inner loop of a maximum-entropy IRL algorithm. This introduces a tri-level optimization, however, which may in fact be more complex to solve than the original IRL problem. In our NeurIPS 2024 paper <d-cite key="hugessen2024simplifying"></d-cite>, we propose a simple reduction of the ICRL problem to an IRL problem, which is equivalent under a broad class of constraint functions, and propose some simple-to-implement practical modifications for the constraint inference case. We show that this can perform as well or better than ICRL methods that explicitly solve a constrained MDP on simulated MuJoCo environments <d-cite key="liu2022benchmarking"></d-cite>. But does it work in the real world?
 
-In this blog post, we will try it out on the autonomous driving task in the Duckietown environment. In our simplified setting for autonomous driving, we consider the single constraint of lane following, which means that the driver is required to stay in the right-hand lane at all times and incurs a cost penalty when outside the lane (either off-road or in the opposite lane). 
+In this blog post, we will try it out on an autonomous driving task in the <a href="https://duckietown.com/">Duckietown</a> environment.  
 
 ### Background
 
@@ -82,14 +82,48 @@ Practically speaking, solving this game involves running IRL where the inner loo
 
 ### Method
 
-In our paper, we demonstrate that Equation \ref{eq:tri} can be reduced to a bi-level optimization, equivalent to performing IRL on a reward "correction" term. 
+In our paper <d-cite key="hugessen2024simplifying"></d-cite>, we demonstrate that Equation \ref{eq:tri} can be reduced to a bi-level optimization, equivalent to performing IRL on a reward "correction" term. 
 
 \begin{equation}\label{eq:icrl-bilevel}
    \max_{c\in\mathcal{F_c}}\min_{\pi\in\Pi} J(\pi_E, r - c) - J(\pi, r - c).
 \end{equation}
 
-where $$r$$ is the known reward and $$c$$ is the learned constraint.
+where $$r$$ is the known reward and $$c$$ is the learned constraint. This simplification holds as long as the constraint class $$\mathcal{F_c}$$ is closed under scalar positive multiplication.
 
+Practically speaking, this can be implemented by adapting any adversarial IRL algorithm such that the policy learner in the inner loop receives the true reward from the environment adjusted additively by the learnt correction term. The main adjustment from IRL is that the constraint class must be closed to positive scalar multiplicatoin, which excludes the bounded activation functions like sigmoid employed in previous ICRL methods <d-cite key="malik2021inverse"></d-cite><d-cite key="liu2022benchmarking"></d-cite>. We instead use a linear activation function clipped to the positive range. We propose using soft clipping with a leaky ReLU activation to reduce issues with disappearing gradients and adding an L2 regularizer on the expected cost of the expert trajectories in the discriminator loss in order to prevent the cost function values from exploding. Hence, the discriminator loss becomes:
+
+\begin{equation}
+    \mathcal{L}(\pi, c) = J(\pi_E, r-c) - J(\pi, r-c) + \expectation_{s,a \sim \tau_E}{\left[c(s,a)^2\right]},
+\end{equation}
+
+
+For more details, including additional possible modifications (not used in these experiments) for adapting IRL to ICRL, please see our paper <d-cite key="hugessen2024simplifying"></d-cite>. 
+
+### Implementation Details for Lane-Following
+In the autonomous driving experiments, we employ the method described above along with the following specific implementation details. All of our code and instructions for reproducing the experiments are available in our <a href="https://github.com/ahugsduckietown-irl">github</a>. 
+
+
+#### Environment
+All experiments are conducted within the <a href="https://duckietown.com/">Duckietown</a> ecosystem, a robotics learning environment environment for autonomous driving. In our simplified setting for autonomous driving, we consider the single constraint of lane following, which means that the driver is required to stay in the right-hand lane at all times and incurs a cost penalty when outside the lane.
+
+* __Real-world environment__: The real-world setup consists of the Duckiebot and Duckietown. The Duckiebot is a small mobile-robot powered by differential drive. It is equipped with a front-facing camera and onboard NVIDIA Jetson Nano.  Duckietown is a modularly assembled track consisting of road tiles (straight, curved, intersections) that can be configured into different topologies. In our experiments, we use a small loop. For more details on the evironment, see <a href="https://duckietown.com/platform/">here</a>.
+* __Simulated Environment__: <a href="https://github.com/duckietown/gym-duckietown/tree/master">Gym-Duckietown</a> is a simulation platform with a Gym interface built to simulate the dynamics of the Duckietown ecosystem. 
+
+
+#### Expert Trajectories:
+Expert trajecotories are generated by a pure pursuit policy <d-cite key="wallace1985first"></d-cite>, an implementation for which is provided in the Duckietown simulator. The pure pursuit policy selects a heading angle for the robot based on a circle that is tangent to the current heading and intersects with the robot's current position and a lookahead point at some distance $L$ on the center curve of the lane. It uses priveledged information available in the simulator, namely the global coordinates of the robot and the lanes of the road. 
+
+#### Algorithm
+* __RL Algorithm__: As the policy optimizer, we use DrQ-v2 <d-cite key="yarats2021mastering"></d-cite>, an RL-method developed for continuous control in image-based environments. DrQ-v2 is an extension of the Deep Deterministic Policy Gradient (DDPG) algorithm <d-cite key="lillicrap2015continuous"></d-cite> which adds data augmentation to images sampled from the replay buffer. DDPG is an off-policy actor-critic method that jointly learns a Q-function critic network $$Q_{\theta}$$ and a deterministic policy network $$\pi_{\phi}$$. In DrQ-v2, a CNN-encoder is used to pre-process the images which are then passed to separate actor and critic heads (gradients are not passed through to the encoder from the actor). In our implementation, we also re-use this encoder with a stop-gradient to pre-process the observations sent to the learned constraint function
+* __Reward function__: We use a simple reward function of forward velocity as the primary reward. This simply rewards the agent for moving forward. Additionally, the episode ends in the simulator when the agent drives onto undrivable areas, so that the agent is incentivized to stay on the road in order to maximize episode returns. 
+* __Sim2Real__: The policy is trained entirely within the simulator and then transferred to the real-world robot directly without additional fine-tuning. In the real-world experiments, inference is performed on a laptop and actions are then transfmitted to the robot over the network (no onboard computation in performed). In these experiments, we do not perform any specific Sim2Real methods such as domain randomization, though this would be an interesting avenue for future work. 
+
+#### Baselines
+We consider three baselines as comparison to our method
+
+* __RL with human-designed reward__: Our first baseline is an RL-policy trained using a human-designed reward. Notably, since one of the primary advantages of IRL is the reduction in human-effort needed to define good reward functions, our goal is not to compare necessarily to the best-possible human-designed reward, but rather a simple reward that could be devised without signfiicant human effort. Hence, we do not use the best-designed reward functions, such as those used in previous work for lane-following with RL <d-cite key="kalapos2021vision"></d-cite>, which do produce good policies with RL alone but required significant engineering. Rather, we select the default reward function provided in the Duckietown simulator. While this reward function is known not to be optimal, this provides a good baseline for what a minimally-engineered reward function could produce.
+* __RL with velocity reward__: The next baseline trains an RL policy on the simple primary goal reward of forward velocity. Hence, this baseline provides an estimate of performance if no IRL fine-tuning to the expert trajectories is performed. Under this reward function, the agent has no incentive to stay within the right lane.
+* __Full IRL__: The final baseline trains IRL from scratch, without access to the simple forward velocity reward function. This baselne provides an estimate for the advantage gained by using a simple reward function as the primary goal, and learning only the remaining "correction" or constraint through IRL.
 
 ### Results
 
