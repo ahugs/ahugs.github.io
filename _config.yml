@@ -87,7 +87,8 @@ bing_site_verification: # out your bing-site-verification ID (Bing Webmaster)
 # Blog
 # -----------------------------------------------------------------------------
 
-blog_name: coming soon # blog_name will be displayed in your blog page
+blog_name: Beyond Atari # blog_name will be displayed in your blog page
+blog_description: Doing RL, in the real world
 permalink: /blog/:year/:title/
 lsi: false # produce an index for related posts
 
@@ -96,7 +97,7 @@ pagination:
   enabled: true
 
 related_blog_posts:
-  enabled: false
+  enabled: true
   max_related: 5
 
 # Giscus comments (RECOMMENDED)
